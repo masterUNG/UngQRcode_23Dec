@@ -7,6 +7,7 @@ class MyConstant {
   static String routeReadQRcode = '/readQRcode';
   static String routeAuthen = '/authen';
   static String routeAddAccount = '/addAccount';
+  static String routeMyService = '/myService';
 
   static Color primary = const Color(0xff65039e);
   static Color dark = const Color(0xff31006e);

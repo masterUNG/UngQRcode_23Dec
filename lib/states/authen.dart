@@ -1,5 +1,11 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ungqrcode/models/user_model.dart';
 import 'package:ungqrcode/utility/my_constant.dart';
+import 'package:ungqrcode/utility/my_dialog.dart';
 import 'package:ungqrcode/widgets/show_button.dart';
 import 'package:ungqrcode/widgets/show_form.dart';
 import 'package:ungqrcode/widgets/show_image.dart';
@@ -19,15 +25,18 @@ class _AuthenState extends State<Authen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(backgroundColor: MyConstant.primary,
-        onPressed: () => Navigator.pushNamed(context, MyConstant.routeAddAccount),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: MyConstant.primary,
+        onPressed: () =>
+            Navigator.pushNamed(context, MyConstant.routeAddAccount),
         child: const Icon(Icons.add),
       ),
       body: LayoutBuilder(builder: (context, constarin) {
         return GestureDetector(
           onTap: () => FocusScope.of(context).requestFocus(FocusScopeNode()),
           behavior: HitTestBehavior.opaque,
-          child: Container(decoration: MyConstant().planBox(),
+          child: Container(
+            decoration: MyConstant().planBox(),
             child: Center(
               child: SingleChildScrollView(
                 child: Form(
@@ -57,10 +66,50 @@ class _AuthenState extends State<Authen> {
       width: constarin.maxWidth * 0.6,
       child: ShowButton(
         label: 'Login',
-        funcButton: () {
+        funcButton: () async {
           if (formKey.currentState!.validate()) {
             formKey.currentState!.save();
             print('user ==> $user, password = $password');
+
+            String path =
+                'https://www.androidthai.in.th/bigc/getUserWhereUserUng.php?isAdd=true&user=$user';
+            await Dio().get(path).then((value) async {
+              print('## value authe ==> $value');
+              if (value.toString() == 'null') {
+                MyDialog().normalDialog(
+                    context, 'User False ?', 'No $user in my Database');
+              } else {
+                for (var item in json.decode(value.data)) {
+                  UserModel model = UserModel.fromMap(item);
+                  if (password == model.password) {
+                    // List<String> datas = [];
+                    var datas = <String>[];
+                    datas.add(model.id);
+                    datas.add(model.name);
+                    datas.add(model.user);
+                    datas.add(model.password);
+                    datas.add(model.lat);
+                    datas.add(model.lng);
+                    datas.add(model.token);
+
+                    SharedPreferences preferences =
+                        await SharedPreferences.getInstance();
+                    preferences.setStringList('data', datas).then((value) {
+                      MyDialog(
+                        funcAction: () => Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            MyConstant.routeMyService,
+                            (route) => false),
+                      ).actionDialog(
+                          context, 'Welcome ${model.name}', 'Have a Nice Day');
+                    });
+                  } else {
+                    MyDialog().normalDialog(
+                        context, 'Password False ?', 'Please try again');
+                  }
+                }
+              }
+            });
           }
         },
       ),
